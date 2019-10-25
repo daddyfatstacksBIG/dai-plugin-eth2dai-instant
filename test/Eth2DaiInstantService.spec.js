@@ -1,38 +1,33 @@
+import Maker from '@makerdao/dai';
+import Eth2DaiInstant from '@makerdao/dai-plugin-eth2dai-instant';
+
 import {
   createDai,
   getNewAccount,
   placeLimitOrder,
   setProxyAccount
 } from './helpers/helpers';
-import Maker from '@makerdao/dai';
-import Eth2DaiInstant from '@makerdao/dai-plugin-eth2dai-instant';
 
 let maker, service, newAccount;
 
 async function buildTestEth2DaiInstantService() {
   maker = await Maker.create('test', {
-    plugins: [Eth2DaiInstant],
-    log: false,
-    web3: {
-      pollingInterval: 50
-    }
+    plugins : [ Eth2DaiInstant ],
+    log : false,
+    web3 : {pollingInterval : 50}
   });
   await maker.authenticate();
   service = maker.service('exchange');
 }
 
-function proxy() {
-  return maker.service('proxy').currentProxy();
-}
+function proxy() { return maker.service('proxy').currentProxy(); }
 
 beforeAll(async () => {
   await buildTestEth2DaiInstantService();
   await createDai(service);
 });
 
-beforeEach(async () => {
-  jest.setTimeout(15000);
-});
+beforeEach(async () => { jest.setTimeout(15000); });
 
 describe('format contract call', () => {
   test('set contract method', async () => {
@@ -48,48 +43,25 @@ describe('format contract call', () => {
   });
 
   test('set contract parameters', async () => {
-    const otcAddress = service
-      .get('smartContract')
-      .getContractByName('MAKER_OTC').address;
-    const registryAddress = service
-      .get('smartContract')
-      .getContractByName('PROXY_REGISTRY').address;
-    const daiAddress = service
-      .get('token')
-      .getToken('DAI')
-      .address();
-    const wethAddress = service
-      .get('token')
-      .getToken('WETH')
-      .address();
+    const otcAddress =
+        service.get('smartContract').getContractByName('MAKER_OTC').address;
+    const registryAddress = service.get('smartContract')
+                                .getContractByName('PROXY_REGISTRY')
+                                .address;
+    const daiAddress = service.get('token').getToken('DAI').address();
+    const wethAddress = service.get('token').getToken('WETH').address();
     const normalParams = await service._buildParams(
-      'DAI',
-      '0.01',
-      'WETH',
-      service._valueForContract(0, 'WETH'),
-      'sellAllAmount'
-    );
+        'DAI', '0.01', 'WETH', service._valueForContract(0, 'WETH'),
+        'sellAllAmount');
     const ethParams = await service._buildParams(
-      'WETH',
-      '0.01',
-      'DAI',
-      service._valueForContract(100, 'WETH'),
-      'sellAllAmountPayEth'
-    );
+        'WETH', '0.01', 'DAI', service._valueForContract(100, 'WETH'),
+        'sellAllAmountPayEth');
     const buyAndPayEthParams = await service._buildParams(
-      'WETH',
-      '0.01',
-      'DAI',
-      service._valueForContract(100, 'WETH'),
-      'buyAllAmountPayEth'
-    );
+        'WETH', '0.01', 'DAI', service._valueForContract(100, 'WETH'),
+        'buyAllAmountPayEth');
     const createParams = await service._buildParams(
-      'WETH',
-      '0.01',
-      'DAI',
-      service._valueForContract(100, 'WETH'),
-      'createAndSellAllAmountPayEth'
-    );
+        'WETH', '0.01', 'DAI', service._valueForContract(100, 'WETH'),
+        'createAndSellAllAmountPayEth');
 
     expect(normalParams.length).toEqual(5);
     expect(normalParams[0]).toEqual(otcAddress);
@@ -107,9 +79,8 @@ describe('format contract call', () => {
     expect(buyAndPayEthParams.length).toEqual(4);
     expect(buyAndPayEthParams[0]).toEqual(otcAddress);
     expect(buyAndPayEthParams[1]).toEqual(daiAddress);
-    expect(buyAndPayEthParams[2]).toEqual(
-      service._valueForContract(0.01, 'WETH')
-    );
+    expect(buyAndPayEthParams[2])
+        .toEqual(service._valueForContract(0.01, 'WETH'));
     expect(buyAndPayEthParams[3]).toEqual(wethAddress);
 
     expect(createParams.length).toEqual(4);
@@ -123,16 +94,14 @@ describe('format contract call', () => {
     const normalOptions = service._buildOptions(1, 'DAI', 'method');
     const ethOptions = service._buildOptions(1, 'ETH', 'method');
     const createOptions = service._buildOptions(1, 'ETH', 'create');
-    expect(Object.keys(normalOptions)).toEqual(['otc', 'dsProxy']);
-    expect(Object.keys(ethOptions)).toEqual(['otc', 'dsProxy', 'value']);
-    expect(Object.keys(createOptions)).toEqual(['otc', 'value']);
+    expect(Object.keys(normalOptions)).toEqual([ 'otc', 'dsProxy' ]);
+    expect(Object.keys(ethOptions)).toEqual([ 'otc', 'dsProxy', 'value' ]);
+    expect(Object.keys(createOptions)).toEqual([ 'otc', 'value' ]);
   });
 });
 
 describe('values from otc', () => {
-  beforeAll(async () => {
-    await placeLimitOrder(service);
-  });
+  beforeAll(async () => { await placeLimitOrder(service); });
 
   test('get buy amount', async () => {
     const buyAmount = await service.getBuyAmount('WETH', 'DAI', '0.01');
@@ -157,9 +126,7 @@ describe('values from otc', () => {
 
 describe('trade with existing dsproxy', () => {
   describe('sell dai', () => {
-    beforeEach(async () => {
-      await placeLimitOrder(service);
-    });
+    beforeEach(async () => { await placeLimitOrder(service); });
 
     test('sell all amount', async () => {
       const order = await service.sell('DAI', 'WETH', '0.01');
@@ -183,9 +150,7 @@ describe('trade with existing dsproxy', () => {
   });
 
   describe('buy dai', () => {
-    beforeEach(async () => {
-      await placeLimitOrder(service, true);
-    });
+    beforeEach(async () => { await placeLimitOrder(service, true); });
 
     test('sell all amount, pay eth', async () => {
       const order = await service.sell('ETH', 'DAI', '0.01');
